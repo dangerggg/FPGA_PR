@@ -11,9 +11,9 @@ port (
     play : out std_logic;-- play:B 1;edit:J 0
     cut: out std_logic;
     connect out std_logic;
-    pause: out std_logic;-- space 1
+    pause: out std_logic-- space 1
     --time_data: out std_logic;
-) ;
+);
 end Keyboard ;
 
 architecture rtl of Keyboard is
@@ -144,24 +144,27 @@ begin
 
             -- 29 space
             when '10010100' =>
-                pause <= '1'
-            -- 35 Y 剪
+                pause <= '1';
+            -- 35 Y �?
             when '10101100' =>
-                cut_or_connect <= '1'
-            -- 31 N 接
+                cut_or_connect <= '1';
+            -- 31 N �?
             when '10001100' =>
-                cut_or_connect < ='0'
+                cut_or_connect < ='0';
+			end case;
     end process;
     
     process(play_or_edit,cut_or_connect)
     begin
         if play_or_edit = '1' then
-            play <= '1'
+            play <= '1';
         elsif play_or_edit = '0' then
             if cut_or_connect = '1' then
-                cut <= '1'
+                cut <= '1';
             elsif cut_or_connect ='0' then
-                connect <= '1'
+                connect <= '1';
+			end if;
+		end if;
     end process;
 
 
