@@ -1,0 +1,54 @@
+top.vhd
+	clk in 100M
+	----------------------
+	场同步信号，行同步信号
+	从sram中获取的图片信号
+	图片数据信号
+	当前视频起始帧地址
+	中间帧地址1
+	中间帧地址2
+	当前视频终止帧地址
+	
+
+keyboard模块：
+	…… in 
+	pause out (约定协议)
+	分割使能 
+	time out 
+	
+	
+VGA控制模块：
+	分频获得25M时钟
+	每秒刷屏60次的时钟（用计数器实现分频）取决于视频文件的帧数
+	图片数据信号 in
+	VGA_CLK	: out std_logic;
+	hs,vs	: out std_logic;		--行同步、场同步信号
+	oRed	: out std_logic_vector (2 downto 0);
+	oGreen	: out std_logic_vector (2 downto 0);
+	oBlue	: out std_logic_vector (2 downto 0);
+
+	
+SRAM控制模块：
+	50M clk in
+	地址信号 in
+	写操作 in
+	读操作 out
+	
+	
+SD卡模块：
+	数据读取（不太清楚）
+	读操作 out
+	地址 in
+
+
+文件管理：
+	in 分割信号
+	in 分割时间点（按帧计算）
+	out 输出的起始地址
+	out 中间帧地址1
+	out 中间帧地址2
+	out 输出的终止地址
+	
+	
+	
+//audio控制模块：
