@@ -7,23 +7,24 @@ entity Keyboard is
 port (
 	datain, clkin : in std_logic ; -- PS2 clk and data
 	fclk, rst : in std_logic ;  -- filter clock
-    -- scancode : out std_logic_vector(7 downto 0) -- scan code signal output
-    play : out std_logic;-- play:B 1;edit:J 0
-    cut: out std_logic;
-    connect out std_logic;
-    pause: out std_logic-- space 1
-    --time_data: out std_logic;
-);
+    play : out std_logic;
+	pause: out std_logic;
+	play_time : out std_logic;
+    cut_file: out std_logic;
+    cut_time:out std_logic;
+    connect_file: out std_logic_vector(1 downto 0)
+) ;
 end Keyboard ;
 
 architecture rtl of Keyboard is
 type state_type is (delay, start, d0, d1, d2, d3, d4, d5, d6, d7, parity, stop, finish) ;
 signal data, clk, clk1, clk2, odd, fok : std_logic ; -- ë�̴����ڲ��ź�, oddΪ��żУ��
 signal scancode: std_logic_vector(7 downto 0);
-signal edit_flag: std_logic := '0';
-signal play_or_edit: std_logic;
-signal cut_or_connect: std_logic;
---signal select_time,time_flag: std_logic := '0';--选择时间
+signal cut_or_connect: std_logic := '0';
+signal time_flag: std_logic := '0';--选择时间
+signal input_num: integer := 0;
+signal time_num: integer := 0;
+signal select_flag: std_logic := '0';
 signal code : std_logic_vector(7 downto 0) ; 
 signal state : state_type ;
 begin
@@ -127,52 +128,91 @@ begin
     process(scancode)
     begin
         case scancode is
-            -- 32 B
-            when '01001100' =>
-                play_or_edit <= '1'
-            -- 3B J
-            when '11011100' =>
-                play_or_edit <= '0'
-            -- 2C T
-            -- when '00110100' =>
-            --     if time_flag = '0' then
-            --         select_time <= '1'
-            --         time_flag <= '1'
-            --     else if time_flag = '1' then
-            --         select_time <= '0'
-            --         time_flag <= '0'
-
-            -- 29 space
-            when '10010100' =>
+            -- 32 B 播放
+            when "01001100" =>
+                play <= '1';
+            -- 3B J 剪辑
+            when "11011100" =>
+                play <= '0';
+            -- 29 space 暂停
+            when "10010100" =>
                 pause <= '1';
-            -- 35 Y �?
-            when '10101100' =>
+            -- 35 Y 剪
+            when "10101100" =>
                 cut_or_connect <= '1';
-            -- 31 N �?
-            when '10001100' =>
-                cut_or_connect < ='0';
-			end case;
-    end process;
-    
-    process(play_or_edit,cut_or_connect)
-    begin
-        if play_or_edit = '1' then
-            play <= '1';
-        elsif play_or_edit = '0' then
-            if cut_or_connect = '1' then
-                cut <= '1';
-            elsif cut_or_connect ='0' then
-                connect <= '1';
+            -- 31 N 接
+            when "10001100" =>
+				cut_or_connect < ='0';
+			-- 2C T 选择时间
+			when "00110100" =>
+				if time_flag = '1' then
+					time_flag  <= '0';
+				elsif time_flag = '0' then
+					time_flag <= '1';
+				end if;
+			-- 1B S 选择视频
+			when "11011000" =>
+				if select_flag = '1' then
+					select_flag <= '0';
+				elsif select_flag = '0' then
+					select_flag <= '1';
+				end if;
+			-- 45 0
+			when "10100010" =>
+				input_num <= 0;
+			-- 16 1
+			when "01101000" =>
+				input_num <= 1;
+			-- 1E 2
+			when "01111000" =>
+				input_num <= 2;
+			-- 26 3
+			when "01100100" =>
+				input_num <= 3;
+			-- 25 4
+			when "10100100" =>
+				input_num <= 4;
+			-- 2E 5
+			when "01110100" =>
+				input_num <= 5;
+			-- 36 6
+			when "01101100" =>
+				input_num <= 6;
+			-- 3D 7
+			when "10111100" =>
+				input_num <= 7;
+			-- 3E 8
+			when "01111100" =>
+				input_num <= 8;
+			-- 46 9
+			when "01100010" =>
+				input_num <= 9;
+		end case;
+	end process;
+	
+    process(input_num,time_flag)
+	begin
+		if time_flag = '1' then -- 输入时间
+			time_num <= time_num*10 + input_num; 
+		elsif time_flag = '0' then
+			if cut_or_connect = '1' then --剪时间
+				cut_time <= time_num;
+			elsif cut_or_connect = '0' then--播放时间
+				play_time <= time_num;
 			end if;
 		end if;
-    end process;
-
-
-    -- process(select_time,scancode)
-    -- begin
-    --     if select_time = '1' then
-
-    -- end process
+	end process;
+	
+	process(input_num,select_flag,cut_or_connect)
+	begin
+		if select_flag = '1' then -- 选择视频
+			if cut_or_connect = '1' then
+				cut_file <= input_num; --剪的视频
+			elsif cut_or_connect = '0 'then
+				connect_file <= input_num;--接的视频，数组是不是默认一个一个输入？不确定。
+			end if;
+		end if;
+	end process;
 end rtl ;
 			
 						
