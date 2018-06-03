@@ -21,12 +21,12 @@ end fastSram;
 	
 	
 architecture bhv of fastSram is
-type memory_state is (idle, mem_read, mem_write);
+type memory_state is (idle, mem_read, mem_write, mem_end);
 signal current_state : memory_state;
 signal addrin : std_logic(19 downto 0);
 signal datain : std_logic(31 downto 0);
 signal clk50, clk25 : std_logic;
-
+signal readOrwrite : std_logic_vector(1 downto 0) := '00';
 begin
 -------------------------------------------时钟分频
 	process(clk, rst)
@@ -59,23 +59,46 @@ begin
 			Sram_CS <= '1';
 			Sram_WE <= '1';
 			Sram_OE <= '1';
-			current_state <= idle;
-		elsif clk'event and clk = '1' then
-			case current_state is
-				when idle =>
+			readOrwrite <= "00";
+		elsif clk50'event and clk50 = '1' then
+			case readOrwrite is 
+				when "00" =>
 					Sram_CS <= '1';
 					Sram_WE <= '1';
 					Sram_OE <= '1';
-					current_state <= mem_read;
-				when mem_read =>
+					--readOrwrite <= "01";
+				when "01" =>
+					Sram_CS <= '0';
+					Sram_OE <= '1';
+					Sram_WE <= '0';
+					Sram_addr <= SD_addr;
+					Sram_data <= SD_data;
+					readOrwrite <= "10";
+				when "10" =>
 					Sram_CS <= '0';
 					Sram_addr <= Vga_addr;
 					Sram_OE <= '0';
 					Sram_WE <= '1';
-					datain <= Sram_data;
-					current_state <= idle;
-				when mem_write => null;
+					vga_data <= Sram_data;
+					readOrwrite <= "01";
+				when "11" => null;
 			end case;
+					
+--			case current_state is
+--				when idle =>
+--					Sram_CS <= '1';
+--					Sram_WE <= '1';
+--					Sram_OE <= '1';
+--					current_state <= mem_read;
+--				when mem_read =>
+--					Sram_CS <= '0';
+--					Sram_addr <= Vga_addr;
+--					Sram_OE <= '0';
+--					Sram_WE <= '1';
+--					datain <= Sram_data
+--					current_state <= idle;
+--				when mem_write => null;
+--			end case;
 		end if;
 	end process;
 		
