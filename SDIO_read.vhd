@@ -15,14 +15,13 @@ entity SDIO_read is
 end;
 
 architecture bhv of SDIO_read is
-    type read_state is (failed,stand_by,WAIT7,transfer_state,WAIT55,ACMD6_state,WAITa6,CMD18_state,WAIT18,sending_data);
+    type read_state is (failed,stand_by,WAIT7,transfer_state,WAIT55,ACMD6_state,WAITa6,CMD6_check_state,CMD6_switch_state,WAIT6switch,CMD12_state,WAIT12,CMD18_state,WAIT18,sending_data);
     signal cmd7 : std_logic_vector(47 downto 0);
     signal cmd55 : std_logic_vector(47 downto 0) := x"770000000065";
     signal acmd6 : std_logic_vector(47 downto 0) := x"4600000002cb";--arg:0...0(30)10
-    -- signal cmd6_check : std_logic_vector(47 downto 0) := x""
-    -- signal cmd6_check_done : std_logic := '0';
-    -- signal cmd6_switch : std_logic_vector(47 downto 0) :=
-    -- signal cmd6_switch_done : std_logic := '0';
+    signal cmd6_check : std_logic_vector(47 downto 0) := x"4600fffff11f" --查询命令
+    signal cmd6_switch : std_logic_vector(47 downto 0) := x"4680fffff129" --切换命令
+    signal cmd12 : std_logic_vector(47 downto 0) := x"4c0000000061"
     signal cmd18 : std_logic_vector(47 downto 0);
     signal cmd_response : std_logic_vector(47 downto 0);
     signal inORout : std_logic := '0';
@@ -133,8 +132,46 @@ begin
 
             when WAITa6 =>
             if(response_valid = '1' and cmd_response(47 dwonto 40) = x"06") then
-                current_state <= CMD18_state;
+                current_state <= CMD6_check_state;
             elsif(response_valid = '1' and cmd_response(47 dwonto 40) /= x"06") then
+                current_state <= failed;
+            end if;
+            
+            when CMD6_check_state =>
+            if(cmd6_check /= x"000000000000") then
+                SD_CMD <= cmd6_check(47);
+                acmd6 <= cmd6_check(46 downto 0) & '0';
+            else
+                current_state <= CMD6_switch_state;
+            end if;
+            
+            when CMD6_switch_state =>
+            if(cmd6_switch /= x"000000000000") then
+                SD_CMD <= cmd6_switch(47);
+                acmd6 <= cmd6_switch(46 downto 0) & '0';
+            else
+                current_state <= WAIT6switch;
+            end if;
+
+            when WAIT6switch =>
+            if(response_valid = '1' and cmd_response(47 dwonto 40) = x"06") then
+                current_state <= CMD12_state;
+            elsif(response_valid = '1' and cmd_response(47 dwonto 40) /= x"06") then
+                current_state <= failed;
+            end if;
+
+            when CMD12_state =>
+            if(cmd12 /= x"000000000000") then
+                SD_CMD <= cmd12(47);
+                acmd6 <= cmd12(46 downto 0) & '0';
+            else
+                current_state <= WAIT12;
+            end if;
+            
+            when WAIT12 =>
+            if(response_valid = '1' and cmd_response(47 dwonto 40) = x"0c") then
+                current_state <= CMD18_state;
+            elsif(response_valid = '1' and cmd_response(47 dwonto 40) /= x"0c") then
                 current_state <= failed;
             end if;
 
